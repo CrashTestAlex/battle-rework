@@ -157,8 +157,7 @@ class Battle(commands.GroupCog):
             for turn_text in gen_battle(battle):
                 max_size = guild_battle.deck_size
                 embed.description = turn_text
-                turn = 0
-                embed.set_footer(text=f"Turn {turn} ~ Max Deck Size: {max_size}")
+                embed.set_footer(text=f"Max Deck Size: {max_size}")
 
                 updated_p1 = gen_deck(battle.p1_balls)
                 updated_p2 = gen_deck(battle.p2_balls)
@@ -175,8 +174,7 @@ class Battle(commands.GroupCog):
                     value=updated_p2,
                     inline=True,
                 )
-                
-                turn += 1
+
                 await message.edit(embed=embed)
                 await asyncio.sleep(3.5) # change the turn shift here if you want i mean idk
 
@@ -439,4 +437,5 @@ class Battle(commands.GroupCog):
             await interaction.response.send_message(
                 f"That ball is not in your deck!", ephemeral=True
             )
+
 
