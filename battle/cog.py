@@ -52,12 +52,12 @@ def gen_deck(balls) -> str:
 
 
 def update_embed(
-    author_balls, opponent_balls, author, opponent, author_ready, opponent_ready
+    author_balls, opponent_balls, author, opponent, author_ready, opponent_ready, max_size: int
 ) -> discord.Embed:
     """Creates an embed for the battle setup phase."""
     embed = discord.Embed(
         title="Battle Plan",
-        description="Add or remove balls you want to propose to the other player using the '/battle add' and '/battle remove' commands. Once you've finished, click the tick button to start the battle.",
+        description=f"Add or remove balls you want to propose to the other player using the '/battle add' and '/battle remove' commands. Remember, you may add up to **{max_size}** balls in a deck for this battle. Once you've finished, click the tick button to start the battle.",
         color=discord.Colour.blurple(),
     )
 
@@ -125,6 +125,11 @@ class Battle(commands.GroupCog):
                 )
                 return
             new_view = create_disabled_buttons()
+            try:
+                setup_interaction = self.interactions[interaction.guild_id]
+                await setup_interaction.delete_original_response()
+            except Exception:
+                pass
             await interaction.response.defer()
 
             battle = guild_battle.battle
@@ -149,8 +154,10 @@ class Battle(commands.GroupCog):
             message = await interaction.followup.send(embed=embed, wait=True)
 
             for turn_text in gen_battle(battle):
+                max_size = guild_battle.deck_size
                 embed.description = turn_text
-                embed.set_footer(text=f"Turn {battle.turns}")
+                turn = 0
+                embed.set_footer(text=f"Turn {turn} ~ Max Deck Size: {max_size}")
 
                 updated_p1 = gen_deck(battle.p1_balls)
                 updated_p2 = gen_deck(battle.p2_balls)
@@ -167,7 +174,8 @@ class Battle(commands.GroupCog):
                     value=updated_p2,
                     inline=True,
                 )
-
+                
+                turn += 1
                 await message.edit(embed=embed)
                 await asyncio.sleep(3.5) # change the turn shift here if you want i mean idk
 
@@ -200,7 +208,7 @@ class Battle(commands.GroupCog):
 
             embed = discord.Embed(
                 title="Battle Plan",
-                description="Add or remove balls you want to propose to the other player using the '/battle add' and '/battle remove' commands. Once you've finished, click the tick button to start the battle.",
+                description="Add or remove balls you want to propose to the other player using the '/battle add' and '/battle remove' commands. Remember, you may add up to **{max_size}** balls in a deck for this battle. Once you've finished, click the tick button to start the battle.",
                 color=discord.Colour.blurple(),
             )
 
@@ -255,7 +263,7 @@ class Battle(commands.GroupCog):
         self.battles[interaction.guild_id] = None
 
     @app_commands.command()
-    async def start(self, interaction: discord.Interaction, opponent: discord.Member):
+    async def start(self, interaction: discord.Interaction, opponent: discord.Member, max_size: int = 3):
         """
         Start a new battle with a chosen user.
         """
@@ -266,9 +274,9 @@ class Battle(commands.GroupCog):
             )
             return
         self.battles[interaction.guild_id] = GuildBattle(
-            author=interaction.user, opponent=opponent
+            author=interaction.user, opponent=opponent, max_size=deck_size
         )
-        embed = update_embed([], [], interaction.user.name, opponent.name, False, False)
+        embed = update_embed([], [], interaction.user.name, opponent.name, False, False, max_size)
 
         start_button = discord.ui.Button(
             style=discord.ButtonStyle.success, emoji="✔", label="Ready"
@@ -319,11 +327,13 @@ class Battle(commands.GroupCog):
             )
             return
 
-        user_balls = (
-            guild_battle.battle.p1_balls
-            if interaction.user == guild_battle.author
-            else guild_battle.battle.p2_balls
-        )
+        user_balls = guild_battle.battle.p1_balls if interaction.user == guild_battle.author else guild_battle.battle.p2_balls
+
+        if len(user_balls) >= guild_battle.deck_size:
+            await interaction.response.send_message(
+                f"You cannot add more than {guild_battle.deck_size} balls!", ephemeral=True
+            )
+            return
 
         ball = BattleBall(
             countryball.countryball.country,
