@@ -43,7 +43,7 @@ class BattleInstance:
     p2_balls: list = field(default_factory=list)
     winner: str = ""
     turns: int = 0
-    deck_size: int = 3
+    deck_size: int = 4
 
 
 def get_damage(ball):
@@ -144,4 +144,5 @@ def gen_battle(battle: BattleInstance):
         battle.winner = battle.p1_balls[0].owner
 
     battle.turns = turn
+
 
