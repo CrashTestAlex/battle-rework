@@ -33,6 +33,7 @@ class GuildBattle:
     author_ready: bool = False
     opponent_ready: bool = False
     battle: BattleInstance = field(default_factory=BattleInstance)
+    deck_size: int = 4
 
 
 def gen_deck(balls) -> str:
@@ -263,7 +264,7 @@ class Battle(commands.GroupCog):
         self.battles[interaction.guild_id] = None
 
     @app_commands.command()
-    async def start(self, interaction: discord.Interaction, opponent: discord.Member, max_size: int = 3):
+    async def start(self, interaction: discord.Interaction, opponent: discord.Member, max_size: int = 4):
         """
         Start a new battle with a chosen user.
         """
@@ -274,7 +275,7 @@ class Battle(commands.GroupCog):
             )
             return
         self.battles[interaction.guild_id] = GuildBattle(
-            author=interaction.user, opponent=opponent, max_size=deck_size
+            author=interaction.user, opponent=opponent, deck_size=max_size
         )
         embed = update_embed([], [], interaction.user.name, opponent.name, False, False, max_size)
 
@@ -366,6 +367,7 @@ class Battle(commands.GroupCog):
                 guild_battle.opponent.name,
                 guild_battle.author_ready,
                 guild_battle.opponent_ready,
+                guild_battle.deck_size,
             )
         )
 
@@ -430,9 +432,11 @@ class Battle(commands.GroupCog):
                     guild_battle.opponent.name,
                     guild_battle.author_ready,
                     guild_battle.opponent_ready,
+                    guild_battle.deck_size,
                 )
             )
         else:
             await interaction.response.send_message(
                 f"That ball is not in your deck!", ephemeral=True
             )
+
